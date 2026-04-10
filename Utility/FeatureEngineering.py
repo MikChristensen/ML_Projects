@@ -289,20 +289,10 @@ class FeatureEngineering:
         pd.Series
             Exponentially decayed volatility values.
         """
-        # Compute daily volatility values
         daily_volatility = df[high_col] - df[low_col]
-        
-        # Initialize exponentially decayed volatility values
-        exponentially_decay_volatility_values = np.zeros(len(df))
-        
-        # Compute exponentially decayed volatility for each day
-        for i in range(len(df)):
-            # Compute sum of decayed volatility values for previous days
-            decayed_volatility_sum = np.sum([daily_volatility[j] * (decay_rate ** (i - j)) if j < i else 0 for j in range(i+1)])
-            exponentially_decay_volatility_values[i] = decayed_volatility_sum
-        
-        # Return exponentially decayed volatility values as a pandas Series
-        return pd.Series(exponentially_decay_volatility_values)
+        # Using ewm (exponential weighted moving window) is mathematically equivalent 
+        # to a decay rate and significantly faster than an O(N^2) loop.
+        return daily_volatility.ewm(alpha=1-decay_rate, adjust=False).sum()
 
     def normalized_volume_spread(self, df: pd.DataFrame, window_size: int = 20, volume_col: str = 'volume', threshold: float = 1.0) -> pd.Series:
         """
